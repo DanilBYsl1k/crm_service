@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('role')->after('name')->default('user');
-            $table->foreign('role')->references('role')->on('roles');
+            $table->foreign('role')->references('role_name')->on('roles');
         });
     }
 
