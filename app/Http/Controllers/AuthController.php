@@ -4,21 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\RestorePasswordRequest;
+use App\Http\Resources\Auth\ProfileResource;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseController
 {
 
-    public function register(RegisterRequest $req)
+    public function register(RegisterRequest $request)
     {
-        $data = $req->validated();
-
+        $data = $request->validated();
         $user = new User;
+
+        foreach ($data as $key => $value) {
+            $user->$key = $value;
+        }
         $user->name = $data['company'];
-        $user->email = $data['email'];
         $user->password = bcrypt($data['password']);
-        $user->company = $data['company'];
         $user->save();
 
         return $user;
@@ -32,10 +37,9 @@ class AuthController extends BaseController
     public function login(LoginRequest $request)
     {
         $credentials = $request->validated();
-//        ['password' => $password, 'email' => $email ] = $data;
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$token = auth()->attempt($credentials)) {
+            return $this->sendError('Unauthorized', ['error' => 'Unauthorized'], 401);
         }
 
         return $this->respondWithToken($token);
@@ -46,9 +50,9 @@ class AuthController extends BaseController
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function me()
+    public function profile()
     {
-        return response()->json(auth()->user());
+        return $this->sendResponse(ProfileResource::make(auth()->user())->resolve(), 'authenticated');
     }
 
     /**
@@ -60,37 +64,49 @@ class AuthController extends BaseController
     {
         auth()->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return $this->sendResponse([], 'logged out');
     }
 
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function refresh()
     {
-        return $this->respondWithToken(Auth()->refresh());
+        return $this->respondWithToken(auth()->refresh());
     }
 
-    public function resetPassword()
+    public function resetPassword(RestorePasswordRequest $request)
     {
+        $email = $request->validated();
+        $user = User::where('email', $email)->first();
+        $token = '';
+
+        if ($user){
+            $token = JWTAuth::fromUser($user);
+        }
+
+        return $user->sendPasswordResetNotification($token);
+    }
+
+    public function checkVerifyToken(\Illuminate\Http\Request $request)
+    {
+        try {
+            $token = $request['token'];
+            $user = auth()->payload();
+
+            return $this->sendResponse($token, 'ok');
+        } catch (JWTException  $e) {
+            return $this->sendError('Token is invalid', [$e->getMessage()]);
+        }
+    }
+
+    public function submitEmail() {
 
     }
 
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     protected function respondWithToken($token)
     {
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => Auth()->factory()->getTTL() * 60
+            'expires_in' => auth()->factory()->getTTL() * 60
         ]);
     }
 }
