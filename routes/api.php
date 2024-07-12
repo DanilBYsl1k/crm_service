@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -9,8 +8,9 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->name('register');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('resetPassword');
     Route::get('verify-token/{token}', [AuthController::class, 'checkVerifyToken'])->name('checkVerifyToken');
+    Route::post('change-password', [AuthController::class, 'changePassword'])->name('changePassword');
+    Route::get('submit-email/{token}', [AuthController::class, 'submitEmail'])->name('submitEmail');
 });
-
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/profile', [AuthController::class, 'profile']);

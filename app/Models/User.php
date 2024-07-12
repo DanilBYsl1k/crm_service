@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\RememberPassword;
-use App\Notifications\RestorePasswordNotification;
+use App\Notifications\SubmitEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -54,13 +54,18 @@ class User extends Authenticatable implements JWTSubject
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): array
     {
         return [];
     }
 
-    public function sendPasswordResetNotification($token)
+    public function sendPasswordResetNotification($token): void
     {
         $this->notify(new RememberPassword($token));
+    }
+
+    public function submitEmailVerify($token): void
+    {
+        $this->notify(new SubmitEmail($token));
     }
 }

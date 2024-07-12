@@ -6,18 +6,17 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RememberPassword extends Notification
+class SubmitEmail extends Notification
 {
     use Queueable;
 
     public string $token;
-
     /**
      * Create a new notification instance.
      */
     public function __construct($token)
     {
-        $this->token = $token;
+            $this->token = $token;
     }
 
     /**
@@ -36,8 +35,8 @@ class RememberPassword extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->line('Change your password')
-                    ->action('click here', url('http://localhost:4200/auth/change-password?token='. $this->token));
+            ->line('Submit your email')
+            ->action('Submit your email', url('http://localhost:4200/auth/submit-email?token='. $this->token));
     }
 
     /**

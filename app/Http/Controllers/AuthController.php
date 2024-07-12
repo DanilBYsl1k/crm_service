@@ -2,31 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\RestorePasswordRequest;
 use App\Http\Resources\Auth\ProfileResource;
 use App\Models\User;
 
+use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseController
 {
-
     public function register(RegisterRequest $request)
     {
-        $data = $request->validated();
-        $user = new User;
+        try {
+            $data = $request->validated();
+            $user = new User();
 
-        foreach ($data as $key => $value) {
-            $user->$key = $value;
+            foreach ($data as $key => $value) {
+                $user->$key = $value;
+            }
+            $user->name = $data['company'];
+            $user->role = 'admin';
+            $user->password = bcrypt($data['password']);
+            $user->save();
+
+        $token = auth()->attempt(['email' => $data['email'], 'password' => $data['password']]);
+        $user->submitEmailVerify($token);
+
+            return $this->sendResponse(true, 'registered successfully');
+        } catch (JWTException  $e) {
+            return $this->sendError('Token is invalid', [$e->getMessage()]);
         }
-        $user->name = $data['company'];
-        $user->password = bcrypt($data['password']);
-        $user->save();
-
-        return $user;
     }
 
     /**
@@ -85,20 +94,48 @@ class AuthController extends BaseController
         return $user->sendPasswordResetNotification($token);
     }
 
-    public function checkVerifyToken(\Illuminate\Http\Request $request)
+    public function checkVerifyToken(Request $request)
     {
         try {
             $token = $request['token'];
-            $user = auth()->payload();
+            $user = auth()->setToken($token)->user();
 
-            return $this->sendResponse($token, 'ok');
+            if (!$user) {
+               return $this->sendError('token is invalid', []);
+            }
+            return $this->sendResponse(true, 'ok');
         } catch (JWTException  $e) {
             return $this->sendError('Token is invalid', [$e->getMessage()]);
         }
     }
 
-    public function submitEmail() {
+    public function submitEmail($token) {
+        $user = auth()->setToken($token)->user();
 
+        if (!$user) {
+            return $this->sendError('token is invalid', []);
+        }
+        if ($user->email_verified_at) {
+            return $this->sendResponse('this user have already verified email', 'ok');
+        }
+        $user->email_verified_at = now();
+        $user->save();
+        return $this->sendResponse(now(), 'ok');
+    }
+
+    public function changePassword(ChangePasswordRequest $request) {
+        try {
+            $data = $request->validated();
+
+            $token = $data['token'];
+
+            $user = auth()->setToken($token)->user();
+            $user->password = bcrypt($request['password']);
+            $user->save();
+            return $this->sendResponse(true, 'password changed');
+        }catch (JWTException  $e) {
+            return $this->sendError('Token is invalid', [$e->getMessage()]);
+        }
     }
 
     protected function respondWithToken($token)
