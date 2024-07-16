@@ -78,7 +78,11 @@ class AuthController extends BaseController
 
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        try {
+            return $this->respondWithToken(auth()->refresh());
+        } catch (JWTException  $e) {
+            return $this->sendError('Invalid token', $e->getMessage(), 401);
+        }
     }
 
     public function resetPassword(RestorePasswordRequest $request)

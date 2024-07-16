@@ -10,9 +10,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('verify-token/{token}', [AuthController::class, 'checkVerifyToken'])->name('checkVerifyToken');
     Route::post('change-password', [AuthController::class, 'changePassword'])->name('changePassword');
     Route::get('submit-email/{token}', [AuthController::class, 'submitEmail'])->name('submitEmail');
+    Route::get('/refresh-token', [AuthController::class, 'refresh'])->name('refresh');
+
 });
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/profile', [AuthController::class, 'profile']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/logout', [AuthController::class, 'logout']);
 });
