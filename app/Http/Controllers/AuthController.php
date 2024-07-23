@@ -29,9 +29,8 @@ class AuthController extends BaseController
             $user->password = bcrypt($data['password']);
             $user->save();
 
-        $token = auth()->attempt(['email' => $data['email'], 'password' => $data['password']]);
-        $user->submitEmailVerify($token);
-
+            $token = auth()->attempt(['email' => $data['email'], 'password' => $data['password']]);
+            $user->submitEmailVerify($token);
             return $this->sendResponse(true, 'registered successfully');
         } catch (JWTException  $e) {
             return $this->sendError('Token is invalid', [$e->getMessage()]);
@@ -59,7 +58,7 @@ class AuthController extends BaseController
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function profile()
+    public function profile(): \Illuminate\Http\JsonResponse
     {
         return $this->sendResponse(ProfileResource::make(auth()->user())->resolve(), 'authenticated');
     }
@@ -69,7 +68,7 @@ class AuthController extends BaseController
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function logout()
+    public function logout(): \Illuminate\Http\JsonResponse
     {
         auth()->logout();
 
@@ -98,7 +97,7 @@ class AuthController extends BaseController
         return $user->sendPasswordResetNotification($token);
     }
 
-    public function checkVerifyToken(Request $request)
+    public function checkVerifyToken(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $token = $request['token'];
@@ -127,7 +126,8 @@ class AuthController extends BaseController
         return $this->sendResponse(now(), 'ok');
     }
 
-    public function changePassword(ChangePasswordRequest $request) {
+    public function changePassword(ChangePasswordRequest $request): \Illuminate\Http\JsonResponse
+    {
         try {
             $data = $request->validated();
 
@@ -142,7 +142,7 @@ class AuthController extends BaseController
         }
     }
 
-    protected function respondWithToken($token)
+    protected function respondWithToken($token): \Illuminate\Http\JsonResponse
     {
         return response()->json([
             'access_token' => $token,
